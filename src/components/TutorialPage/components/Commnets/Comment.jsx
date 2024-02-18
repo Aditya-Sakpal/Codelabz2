@@ -42,14 +42,14 @@ const useStyles = makeStyles(() => ({
   comments: {
     margin: "5px",
     // padding: "10px 15px"
-    padding: "25px",
+    padding: "25px"
   },
   replyComments: {
     margin: "5px",
     // padding:"25px",
     padding: "5px 10px",
     marginLeft: "auto",
-    width: "85%",
+    width: "85%"
     // height:"2rem !important",
   },
   settings: {
@@ -60,21 +60,19 @@ const useStyles = makeStyles(() => ({
   },
   small: {
     padding: "2px"
-  },
-
+  }
 }));
 
 const Comment = ({ id, isReply = false }) => {
   const classes = useStyles();
   const [showReplyfield, setShowReplyfield] = useState(false);
   const [replies, setReplies] = useState(null);
-  const [alignment, setAlignment] = useState('left');
+  const [alignment, setAlignment] = useState("left");
   const [count, setCount] = useState(1);
   const firestore = useFirestore();
   const firebase = useFirebase();
   const dispatch = useDispatch();
-  const [intialLoad, setInitialLoad] = useState(true)
-
+  const [intialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     getCommentData(id)(firebase, firestore, dispatch);
@@ -83,30 +81,30 @@ const Comment = ({ id, isReply = false }) => {
   const commentsArray = useSelector(
     ({
       tutorialPage: {
-        comment: { data },
-      },
+        comment: { data }
+      }
     }) => data
   );
 
-  const [data] = commentsArray.filter((comment) => comment.comment_id == id);
+  const [data] = commentsArray.filter(comment => comment.comment_id == id);
 
   const repliesArray = useSelector(
     ({
       tutorialPage: {
-        comment: { replies },
-      },
+        comment: { replies }
+      }
     }) => replies
   );
 
   useEffect(() => {
-    console.log("useEffect called")
+    console.log("useEffect called");
     if (repliesArray && repliesArray.length > 0 && intialLoad) {
       const filteredReplies = repliesArray.filter(
-        (reply) => reply.comment_id == id
+        reply => reply.comment_id == id
       );
       if (filteredReplies.length > 0) {
         setReplies(filteredReplies[0].replies);
-        setInitialLoad(false)
+        setInitialLoad(false);
       }
     }
   }, [repliesArray]);
@@ -123,42 +121,50 @@ const Comment = ({ id, isReply = false }) => {
 
   const handleAlignment = (event, newAlignment) => {
     setAlignment(newAlignment);
-    const align=alignment === "right" ? "left" : "right";
-    setAlignment(align)
-    
+    const align = alignment === "right" ? "left" : "right";
+    setAlignment(align);
   };
   const user = firebase.auth().currentUser;
-  const handleSubmit = async (comment) => {
+  const handleSubmit = async comment => {
     const commentData = {
       content: comment,
       replyTo: data.comment_id,
       tutorial_id: data.tutorial_id,
       createdAt: firestore.FieldValue.serverTimestamp(),
-      userId: user.uid,
+      userId: user.uid
     };
-    const newReplies = await addComment("reply", commentData)(firebase, firestore, dispatch);
+    const newReplies = await addComment("reply", commentData)(
+      firebase,
+      firestore,
+      dispatch
+    );
     setReplies(newReplies);
-
   };
-
-
 
   return (
     data && (
       <>
-        <Paper variant="outlined" className={isReply ? classes.replyComments : classes.comments}>
-          <Typography mb={1} sx={{ fontSize: '18px' }}>
+        <Paper
+          variant="outlined"
+          className={isReply ? classes.replyComments : classes.comments}
+        >
+          <Typography mb={1} sx={{ fontSize: "18px" }}>
             {data?.content}
           </Typography>
           <Grid container justifyContent="space-between">
-            <User type={'comment'} id={user.uid} timestamp={data?.createdAt} size={'sm'} />
+            <User
+              type={"comment"}
+              id={user.uid}
+              timestamp={data?.createdAt}
+              size={"sm"}
+            />
             <CardActions className={classes.settings} disableSpacing>
               <Button
                 onClick={async () => {
                   setShowReplyfield(!showReplyfield);
                   getCommentReply(id)(firebase, firestore, dispatch);
                 }}
-                sx={{ textTransform: 'none', fontSize: '12px' }}
+                sx={{ textTransform: "none", fontSize: "12px" }}
               >
                 {showReplyfield ? "Hide Replies" : "Show Replies"}
               </Button>
@@ -197,13 +203,13 @@ const Comment = ({ id, isReply = false }) => {
           </Grid>
         </Paper>
         {showReplyfield ? (
-          <div style={{ margin: '10px 0 0 10px' }}>
+          <div style={{ margin: "10px 0 0 10px" }}>
             <Textbox type="reply" handleSubmit={handleSubmit} />
-            {replies && replies.length > 0 ? (
-              replies.map((replyId, index) => (
-                <Comment key={index} id={replyId} isReply={true} />
-              ))
-            ) : null}
+            {replies && replies.length > 0
+              ? replies.map((replyId, index) => (
+                  <Comment key={index} id={replyId} isReply={true} />
+                ))
+              : null}
           </div>
         ) : null}
       </>

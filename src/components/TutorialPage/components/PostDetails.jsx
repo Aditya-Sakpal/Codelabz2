@@ -77,9 +77,8 @@ const PostDetails = ({ details }) => {
 
   const handleAlignment = (event, newAlignment) => {
     setAlignment(newAlignment);
-    const align=alignment === "right" ? "left" : "right";
-    setAlignment(align)
-    
+    const align = alignment === "right" ? "left" : "right";
+    setAlignment(align);
   };
   const classes = useStyles();
   return (

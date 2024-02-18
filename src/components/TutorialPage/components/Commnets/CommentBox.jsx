@@ -6,7 +6,10 @@ import Comment from "./Comment";
 import { addComment } from "../../../../store/actions/tutorialPageActions";
 import { useDispatch, useSelector } from "react-redux";
 import { useFirebase, useFirestore } from "react-redux-firebase";
-import { getTutorialData,getTutorialSteps } from "../../../../store/actions/tutorialPageActions";
+import {
+  getTutorialData,
+  getTutorialSteps
+} from "../../../../store/actions/tutorialPageActions";
 
 const useStyles = makeStyles(() => ({
   container: {
@@ -38,16 +41,20 @@ const CommentBox = ({ commentsArray, tutorialId }) => {
   const [comments, setComments] = useState([]);
   const [currCommentCount, setCurrCommentCount] = useState(3);
 
-  const handleSubmit =async (comment) => {
+  const handleSubmit = async comment => {
     const user = firebase.auth().currentUser;
     const commentData = {
       content: comment,
       replyTo: tutorialId,
       tutorial_id: tutorialId,
       createdAt: firestore.FieldValue.serverTimestamp(),
-      userId:user.uid,
+      userId: user.uid
     };
-    const tutorialData = await addComment("comment",commentData)(firebase, firestore, dispatch);
+    const tutorialData = await addComment("comment", commentData)(
+      firebase,
+      firestore,
+      dispatch
+    );
     console.log(tutorialData);
   };
 
