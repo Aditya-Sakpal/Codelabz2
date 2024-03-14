@@ -205,7 +205,6 @@ export const getCurrentTutorialData =
       const steps_obj = {};
       stepsQuerySnapshot.forEach(step => {
         steps_obj[step.id] = step.data();
-        // console.log(step.id, step.data())
       });
 
       const steps = _.orderBy(
@@ -230,36 +229,36 @@ export const getCurrentTutorialData =
 
 export const addNewTutorialStep =
   ({ owner, tutorial_id, title, time, id }) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      dispatch({ type: actions.CREATE_TUTORIAL_STEP_START });
+    async (firebase, firestore, dispatch) => {
+      try {
+        dispatch({ type: actions.CREATE_TUTORIAL_STEP_START });
 
-      await firestore
-        .collection("tutorials")
-        .doc(tutorial_id)
-        .collection("steps")
-        .doc(id)
-        .set({
-          content: `Switch to editor mode to begin <b>${title}</b> step`,
-          id,
-          time,
-          title,
-          visibility: true,
-          deleted: false
-        });
+        await firestore
+          .collection("tutorials")
+          .doc(tutorial_id)
+          .collection("steps")
+          .doc(id)
+          .set({
+            content: `Switch to editor mode to begin <b>${title}</b> step`,
+            id,
+            time,
+            title,
+            visibility: true,
+            deleted: false
+          });
 
-      await getCurrentTutorialData(owner, tutorial_id)(
-        firebase,
-        firestore,
-        dispatch
-      );
+        await getCurrentTutorialData(owner, tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
 
-      dispatch({ type: actions.CREATE_TUTORIAL_STEP_SUCCESS });
-    } catch (e) {
-      console.log("CREATE_TUTORIAL_STEP_FAIL", e.message);
-      dispatch({ type: actions.CREATE_TUTORIAL_STEP_FAIL, payload: e.message });
-    }
-  };
+        dispatch({ type: actions.CREATE_TUTORIAL_STEP_SUCCESS });
+      } catch (e) {
+        console.log("CREATE_TUTORIAL_STEP_FAIL", e.message);
+        dispatch({ type: actions.CREATE_TUTORIAL_STEP_FAIL, payload: e.message });
+      }
+    };
 
 export const clearCreateTutorials = () => dispatch =>
   dispatch({ type: actions.CLEAR_CREATE_TUTORIALS_STATE });
@@ -305,78 +304,78 @@ export const setCurrentStepContent =
 
 export const hideUnHideStep =
   (owner, tutorial_id, step_id, visibility) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      /* not being used */
-      // const type = await checkUserOrOrgHandle(owner)(firebase);
-      await firestore
-        .collection("tutorials")
-        .doc(tutorial_id)
-        .collection("steps")
-        .doc(step_id)
-        .update({
-          [`visibility`]: !visibility,
-          updatedAt: firestore.FieldValue.serverTimestamp()
-        });
+    async (firebase, firestore, dispatch) => {
+      try {
+        /* not being used */
+        // const type = await checkUserOrOrgHandle(owner)(firebase);
+        await firestore
+          .collection("tutorials")
+          .doc(tutorial_id)
+          .collection("steps")
+          .doc(step_id)
+          .update({
+            [`visibility`]: !visibility,
+            updatedAt: firestore.FieldValue.serverTimestamp()
+          });
 
-      await getCurrentTutorialData(owner, tutorial_id)(
-        firebase,
-        firestore,
-        dispatch
-      );
-    } catch (e) {
-      console.log(e.message);
-    }
-  };
+        await getCurrentTutorialData(owner, tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
 
 export const publishUnpublishTutorial =
   (owner, tutorial_id, isPublished) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      await firestore
-        .collection("tutorials")
-        .doc(tutorial_id)
-        .update({
-          ["isPublished"]: !isPublished
-        });
+    async (firebase, firestore, dispatch) => {
+      try {
+        await firestore
+          .collection("tutorials")
+          .doc(tutorial_id)
+          .update({
+            ["isPublished"]: !isPublished
+          });
 
-      getCurrentTutorialData(owner, tutorial_id)(firebase, firestore, dispatch);
-    } catch (e) {
-      console.log(e.message);
-    }
-  };
+        getCurrentTutorialData(owner, tutorial_id)(firebase, firestore, dispatch);
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
 
 export const removeStep =
   (owner, tutorial_id, step_id, current_step_no) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      await firestore
-        .collection("tutorials")
-        .doc(tutorial_id)
-        .collection("steps")
-        .doc(step_id)
-        .delete();
+    async (firebase, firestore, dispatch) => {
+      try {
+        await firestore
+          .collection("tutorials")
+          .doc(tutorial_id)
+          .collection("steps")
+          .doc(step_id)
+          .delete();
 
-      // const data = await firestore
-      //   .collection("tutorials")
-      //   .doc(tutorial_id)
-      //   .collection("steps")
-      //   .doc(step_id)
-      //   .get();
+        // const data = await firestore
+        //   .collection("tutorials")
+        //   .doc(tutorial_id)
+        //   .collection("steps")
+        //   .doc(step_id)
+        //   .get();
 
-      await setCurrentStepNo(
-        current_step_no > 0 ? current_step_no - 1 : current_step_no
-      )(dispatch);
+        await setCurrentStepNo(
+          current_step_no > 0 ? current_step_no - 1 : current_step_no
+        )(dispatch);
 
-      await getCurrentTutorialData(owner, tutorial_id)(
-        firebase,
-        firestore,
-        dispatch
-      );
-    } catch (e) {
-      console.log(e.message);
-    }
-  };
+        await getCurrentTutorialData(owner, tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
 
 export const setCurrentStep = data => async dispatch =>
   dispatch({ type: actions.SET_EDITOR_DATA, payload: data });
@@ -465,69 +464,326 @@ export const remoteTutorialImages =
 
 export const updateStepTitle =
   (owner, tutorial_id, step_id, step_title) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      const dbPath = `tutorials/${tutorial_id}/steps`;
-      await firestore
-        .collection(dbPath)
-        .doc(step_id)
-        .update({
-          [`title`]: step_title,
-          updatedAt: firestore.FieldValue.serverTimestamp()
-        });
+    async (firebase, firestore, dispatch) => {
+      try {
+        const dbPath = `tutorials/${tutorial_id}/steps`;
+        await firestore
+          .collection(dbPath)
+          .doc(step_id)
+          .update({
+            [`title`]: step_title,
+            updatedAt: firestore.FieldValue.serverTimestamp()
+          });
 
-      await getCurrentTutorialData(owner, tutorial_id)(
-        firebase,
-        firestore,
-        dispatch
-      );
-    } catch (e) {
-      console.log(e);
-    }
-  };
+        await getCurrentTutorialData(owner, tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
+      } catch (e) {
+        console.log(e);
+      }
+    };
 
 export const updateStepTime =
   (owner, tutorial_id, step_id, step_time) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      const dbPath = `tutorials/${tutorial_id}/steps`;
+    async (firebase, firestore, dispatch) => {
+      try {
+        const dbPath = `tutorials/${tutorial_id}/steps`;
 
-      await firestore
-        .collection(dbPath)
-        .doc(step_id)
-        .update({
-          [`time`]: step_time,
-          updatedAt: firestore.FieldValue.serverTimestamp()
-        });
+        await firestore
+          .collection(dbPath)
+          .doc(step_id)
+          .update({
+            [`time`]: step_time,
+            updatedAt: firestore.FieldValue.serverTimestamp()
+          });
 
-      await getCurrentTutorialData(owner, tutorial_id)(
-        firebase,
-        firestore,
-        dispatch
-      );
-    } catch (e) {
-      console.log(e.message);
-    }
-  };
+        await getCurrentTutorialData(owner, tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
 
 export const setTutorialTheme =
   ({ tutorial_id, owner, bgColor, textColor }) =>
-  async (firebase, firestore, dispatch) => {
-    try {
-      const dbPath = `tutorials`;
+    async (firebase, firestore, dispatch) => {
+      try {
+        const dbPath = `tutorials`;
 
-      await firestore.collection(dbPath).doc(tutorial_id).update({
-        text_color: textColor,
-        background_color: bgColor,
-        updatedAt: firestore.FieldValue.serverTimestamp()
+        await firestore.collection(dbPath).doc(tutorial_id).update({
+          text_color: textColor,
+          background_color: bgColor,
+          updatedAt: firestore.FieldValue.serverTimestamp()
+        });
+
+        await getCurrentTutorialData(owner, tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
+
+export const upVote = (tutorial_id) => async (firebase, firestore, dispatch) => {
+  try {
+    const userId = firebase.auth().currentUser.uid;
+    const tutorialLikesRef = firestore.collection("tutorial_likes");
+    const snapshot = await tutorialLikesRef.where('uid', '==', userId).where('tut_id', '==', tutorial_id).get();
+
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await tutorialLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === 1){
+        await tutorialLikesRef.doc(docId).update({ value: 0 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === -1){
+        await tutorialLikesRef.doc(docId).update({ value: 1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(1), downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await tutorialLikesRef.doc(docId).update({ value: 1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const tutorialLikes = await tutorialLikesRef.add({
+        uid: userId,
+        tut_id: tutorial_id,
+        value: 1
       });
-
-      await getCurrentTutorialData(owner, tutorial_id)(
-        firebase,
-        firestore,
-        dispatch
-      );
-    } catch (e) {
-      console.log(e.message);
+      const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+      const tutorialDoc = await tutorialRef.get();
+      if (tutorialDoc.exists) {
+        await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await tutorialRef.set({ upVote: 1 }, { merge: true });
+      }
     }
-  };
+
+    await getVotedTutorials()(firebase, firestore, dispatch);
+  } catch (e) {
+    console.log(e.message);
+  }
+}
+
+export const downVote = (tutorial_id) => async (firebase, firestore, dispatch) => {
+  try {
+    const userId = firebase.auth().currentUser.uid;
+    const tutorialLikesRef = firestore.collection("tutorial_likes");
+    const snapshot = await tutorialLikesRef.where('uid', '==', userId).where('tut_id', '==', tutorial_id).get();
+
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await tutorialLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === -1){
+        await tutorialLikesRef.doc(docId).update({ value: 0 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 1){
+        await tutorialLikesRef.doc(docId).update({ value: -1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(1), upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await tutorialLikesRef.doc(docId).update({ value: -1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const tutorialLikes = await tutorialLikesRef.add({
+        uid: userId,
+        tut_id: tutorial_id,
+        value: -1
+      });
+      const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+      const tutorialDoc = await tutorialRef.get();
+      if (tutorialDoc.exists) {
+        await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await tutorialRef.set({ downVote: 1 }, { merge: true });
+      }
+    }
+
+    await getVotedTutorials()(firebase, firestore, dispatch);
+
+  } catch (e) {
+    console.log(e.message);
+  }
+}
+
+export const getVotedTutorials = () => async (firebase, firestore, dispatch) => {
+  try {
+    dispatch({ type: actions.GET_VOTED_TUTORIALS_START });
+    const userId = firebase.auth().currentUser.uid;
+    const tutorialLikesRef = firestore.collection("tutorial_likes");
+    const snapshot = await tutorialLikesRef.where('uid', '==', userId).get();
+    if (!snapshot.empty) {
+      const likedTutorials = snapshot.docs.map(doc => doc.data());
+      dispatch({
+        type: actions.GET_VOTED_TUTORIALS_SUCCESS,
+        payload: likedTutorials
+      });
+    } else {
+      dispatch({
+        type: actions.GET_VOTED_TUTORIALS_SUCCESS,
+        payload: []
+      });
+    }
+  } catch (e) {
+    dispatch({
+      type: actions.GET_VOTED_TUTORIALS_FAIL,
+      payload: e.message
+    });
+  }
+}
+
+
+export const upVoteComment = (comment_id) => async (firebase, firestore, dispatch) => {
+  try{
+    const userId = firebase.auth().currentUser.uid;
+    const commentLikesRef = firestore.collection("comment_likes");
+    const snapshot = await commentLikesRef.where('uid', '==', userId).where('comment_id', '==', comment_id).get();
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await commentLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === 1){
+        await commentLikesRef.doc(docId).update({ value: 0 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === -1){
+        await commentLikesRef.doc(docId).update({ value: 1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(1), downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await commentLikesRef.doc(docId).update({ value: 1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const commentLikes = await commentLikesRef.add({
+        uid: userId,
+        comment_id: comment_id,
+        value: 1
+      });
+      const commentRef = firestore.collection("cl_comments").doc(comment_id);
+      const commentDoc = await commentRef.get();
+      if (commentDoc.exists) {
+        await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await commentRef.set({ upVote: 1 }, { merge: true });
+      }
+    }
+    await getVotedComments()(firebase, firestore, dispatch);
+  }catch(e){
+    console.log(e.message);
+  }
+}
+
+
+export const downVoteComment = (comment_id) => async (firebase, firestore, dispatch) => {
+  try{
+    const userId = firebase.auth().currentUser.uid;
+    const commentLikesRef = firestore.collection("comment_likes");
+    const snapshot = await commentLikesRef.where('uid', '==', userId).where('comment_id', '==', comment_id).get();
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await commentLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === -1){
+        await commentLikesRef.doc(docId).update({ value: 0 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 1){
+        await commentLikesRef.doc(docId).update({ value: -1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(1), upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await commentLikesRef.doc(docId).update({ value: -1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const commentLikes = await commentLikesRef.add({
+        uid: userId,
+        comment_id: comment_id,
+        value: -1
+      });
+      const commentRef = firestore.collection("cl_comments").doc(comment_id);
+      const commentDoc = await commentRef.get();
+      if (commentDoc.exists) {
+        await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await commentRef.set({ downVote: 1 }, { merge: true });
+      }
+    }
+    await getVotedComments()(firebase, firestore, dispatch); 
+  }catch(e){
+    console.log(e.message);
+  }
+}
+
+export const getVotedComments = () => async (firebase, firestore, dispatch) => {
+  try{
+    dispatch({ type: actions.GET_VOTED_TUTORIAL_COMMENTS_START });
+    const userId = firebase.auth().currentUser.uid;
+    const commentLikesRef = firestore.collection("comment_likes");
+    const snapshot = await commentLikesRef.where('uid', '==', userId).get();
+    if (!snapshot.empty) {
+      const likedComments = snapshot.docs.map(doc => doc.data());
+      dispatch({
+        type: actions.GET_VOTED_TUTORIAL_COMMENTS_SUCCESS,
+        payload: likedComments
+      });
+    } else {
+      dispatch({
+        type: actions.GET_VOTED_TUTORIAL_COMMENTS_SUCCESS,
+        payload: []
+      });
+    }
+  }catch (e) {
+    dispatch({ type: actions.GET_VOTED_TUTORIAL_COMMENTS_FAIL, payload: e.message });
+    console.log(e.message);
+  }
+}

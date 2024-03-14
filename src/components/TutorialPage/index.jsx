@@ -17,6 +17,9 @@ import { getUserProfileData } from "../../store/actions";
 import { useDispatch, useSelector } from "react-redux";
 import { useFirebase, useFirestore } from "react-redux-firebase";
 import { useParams, useHistory } from "react-router-dom";
+import { getVotedTutorials } from "../../store/actions";
+import { getTutorialFeedData } from "../../store/actions/tutorialPageActions";
+import { getTutorialFeedIdArray } from "../../store/actions/tutorialPageActions";
 
 function TutorialPage({ background = "white", textColor = "black" }) {
   const classes = useStyles();
@@ -24,16 +27,35 @@ function TutorialPage({ background = "white", textColor = "black" }) {
   const history = useHistory();
   const windowSize = useWindowSize();
   const [openMenu, setOpen] = useState(false);
+  // const [tutorial, setTutorial] = useState([]);
+
   const toggleSlider = () => {
     setOpen(!openMenu);
   };
   const dispatch = useDispatch();
   const firebase = useFirebase();
   const firestore = useFirestore();
+
+  const profileData = useSelector(({ firebase: { profile } }) => profile);
+
   useEffect(() => {
+    // console.log(tutorial, "tutorial before")
+    const getFeed = async () => {
+      const tutorialIdArray = await getTutorialFeedIdArray(profileData.uid)(
+        firebase,
+        firestore,
+        dispatch
+      );
+      await getTutorialFeedData(tutorialIdArray)(firebase, firestore, dispatch);
+    };
+    getFeed();
+
     getTutorialData(id)(firebase, firestore, dispatch);
     getTutorialSteps(id)(firebase, firestore, dispatch);
-    return () => {};
+
+    // console.log(tutorial, "tutorial after")
+
+    return () => { };
   }, []);
   const tutorial = useSelector(
     ({
@@ -42,6 +64,14 @@ function TutorialPage({ background = "white", textColor = "black" }) {
       }
     }) => data
   );
+  const votedTutorials = useSelector(
+    ({
+      tutorials: {
+        votes: { likedTutorials }
+      }
+    }) => likedTutorials
+  );
+
   const loading = useSelector(
     ({
       tutorialPage: {
@@ -51,13 +81,15 @@ function TutorialPage({ background = "white", textColor = "black" }) {
   );
 
   const postDetails = {
+    tutorial_id: tutorial?.tutorial_id,
     title: tutorial?.title,
     org: tutorial?.owner,
     user: tutorial?.created_by,
-    upVote: tutorial?.upVotes,
-    downVote: tutorial?.downVotes,
+    upVotes: tutorial?.upVotes,
+    downVotes: tutorial?.downVotes,
     published_on: tutorial?.createdAt,
-    tag: tutorial?.tut_tags
+    tag: tutorial?.tut_tags,
+    value: votedTutorials?.find(t => t.tut_id === tutorial?.tutorial_id)?.value || 0
   };
 
   const steps = useSelector(
@@ -110,9 +142,12 @@ function TutorialPage({ background = "white", textColor = "black" }) {
           data-testId="tutorialpageMainBody"
           xs={6}
         >
-          <PostDetails details={postDetails} />
-          <Tutorial steps={steps} />
-          <CommentBox commentsArray={tutorial?.comments} tutorialId={id} />
+          {tutorial && (<>
+            <PostDetails details={postDetails} />
+            <Tutorial steps={steps} />
+            <CommentBox commentsArray={tutorial?.comments} tutorialId={id} />
+          </>
+          )}
         </Grid>
 
         <Grid

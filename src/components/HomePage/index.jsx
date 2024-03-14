@@ -37,6 +37,7 @@ import {
   getTutorialFeedData,
   getTutorialFeedIdArray
 } from "../../store/actions/tutorialPageActions";
+import { getVotedTutorials } from "../../store/actions";
 
 function HomePage({ background = "white", textColor = "black" }) {
   const classes = useStyles();
@@ -164,18 +165,43 @@ function HomePage({ background = "white", textColor = "black" }) {
     }
   ]);
 
+  const [tuts, setTuts] = useState([])
+
   const profileData = useSelector(({ firebase: { profile } }) => profile);
   useEffect(() => {
+    const getVotedTutorialsData = async () => {
+      await getVotedTutorials()(firebase, firestore, dispatch);
+    };
+    getVotedTutorialsData();
     const getFeed = async () => {
       const tutorialIdArray = await getTutorialFeedIdArray(profileData.uid)(
         firebase,
         firestore,
         dispatch
       );
-      getTutorialFeedData(tutorialIdArray)(firebase, firestore, dispatch);
+      await getTutorialFeedData(tutorialIdArray)(firebase, firestore, dispatch);
     };
     getFeed();
+    const newTutorials = tutorials.map(tutorial => {
+      const isVoted = votedTutorials.find(votedTutorial => votedTutorial.tut_id === tutorial.tutorial_id);
+      if (isVoted) {
+        return { ...tutorial, value: isVoted.value };
+      }else{
+        return {...tutorial, value: 0}
+      }
+    });
+    setTuts(newTutorials);
   }, []);
+
+  const votedTutorials = useSelector(
+    ({
+      tutorials: {
+        votes: { likedTutorials }
+      }
+    }) => likedTutorials
+  );
+
+
   const tutorials = useSelector(
     ({
       tutorialPage: {
@@ -239,7 +265,7 @@ function HomePage({ background = "white", textColor = "black" }) {
           <Box item sx={{ display: { md: "none" } }}>
             <TagCard tags={tags} />
           </Box>
-          {tutorials.map(tutorial => {
+          {tuts.map(tutorial => {
             return !tutorial?.featured_image ? (
               <CardWithoutPicture tutorial={tutorial} />
             ) : (
