@@ -4,7 +4,7 @@ const initialState = {
   current_step: "",
   current_step_no: 0
 };
- 
+
 const TutorialsEditorReducer = (state = initialState, { type, payload }) => {
   switch (type) {
     case actions.CLEAR_EDITOR_STATE:
