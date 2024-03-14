@@ -296,4 +296,4 @@ const getAllOrgsOfCurrentUser = () => async (firebase, firestore) => {
   } catch (e) {
     console.log(e);
   }
-};
+}; 
