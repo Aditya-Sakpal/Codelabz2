@@ -121,6 +121,7 @@ export const getTutorialData =
         .get();
       const tutorial = data.data();
       dispatch({ type: actions.GET_POST_DATA_SUCCESS, payload: tutorial });
+      return tutorial;
     } catch (e) {
       dispatch({ type: actions.GET_POST_DATA_FAIL });
       console.log(e);
@@ -159,6 +160,8 @@ export const getCommentData =
         .doc(commentId)
         .get();
       const comment = data.data();
+
+      console.log("comment", comment);
       dispatch({ type: actions.GET_COMMENT_DATA_SUCCESS, payload: comment });
     } catch (e) {
       dispatch({ type: actions.GET_COMMENT_DATA_FAIL });
@@ -169,9 +172,8 @@ export const getCommentData =
 export const getCommentReply =
   commentId => async (firebase, firestore, dispatch) => {
     try {
-      console.log("commentId", commentId);
+      // console.log("commentId", commentId)
       dispatch({ type: actions.GET_REPLIES_START });
-      console.log("Get replies");
       const replies = await firestore
         .collection("cl_comments")
         .where("replyTo", "==", commentId)
@@ -187,34 +189,53 @@ export const getCommentReply =
         type: actions.GET_REPLIES_SUCCESS,
         payload: { replies, comment_id: commentId }
       });
+      // console.log("replies", replies);
+      return replies;
     } catch (e) {
       console.log(e);
     }
   };
 
-export const addComment = comment => async (firebase, firestore, dispatch) => {
-  try {
-    dispatch({ type: actions.ADD_COMMENT_START });
-    await firestore
-      .collection("cl_comments")
-      .add(comment)
-      .then(docref => {
-        firestore.collection("cl_comments").doc(docref.id).update({
-          comment_id: docref.id
+export const addComment =
+  (type, comment) => async (firebase, firestore, dispatch) => {
+    try {
+      dispatch({ type: actions.ADD_COMMENT_START });
+      await firestore
+        .collection("cl_comments")
+        .add(comment)
+        .then(docref => {
+          firestore.collection("cl_comments").doc(docref.id).update({
+            comment_id: docref.id
+          });
+          if (comment.replyTo == comment.tutorial_id) {
+            firestore
+              .collection("tutorials")
+              .doc(comment.tutorial_id)
+              .update({
+                comments: firebase.firestore.FieldValue.arrayUnion(docref.id)
+              });
+          }
         });
-        if (comment.replyTo == comment.tutorial_id) {
-          firestore
-            .collection("tutorials")
-            .doc(comment.tutorial_id)
-            .update({
-              comments: firebase.firestore.FieldValue.arrayUnion(docref.id)
-            });
-        }
-      })
-      .then(() => {
-        dispatch({ type: actions.ADD_COMMENT_SUCCESS });
-      });
-  } catch (e) {
-    dispatch({ type: actions.ADD_COMMENT_FAILED, payload: e.message });
-  }
-};
+      dispatch({ type: actions.ADD_COMMENT_SUCCESS });
+
+      if (type == "comment") {
+        const tutorialData = await getTutorialData(comment.tutorial_id)(
+          firebase,
+          firestore,
+          dispatch
+        );
+        // console.log("called", tutorialData);
+        return tutorialData;
+      } else if (type == "reply") {
+        const newReplies = await getCommentReply(comment.replyTo)(
+          firebase,
+          firestore,
+          dispatch
+        );
+        // console.log("newReplies3", newReplies);
+        return newReplies;
+      }
+    } catch (e) {
+      dispatch({ type: actions.ADD_COMMENT_FAILED, payload: e.message });
+    }
+  };

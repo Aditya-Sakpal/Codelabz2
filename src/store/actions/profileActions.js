@@ -186,6 +186,30 @@ export const getUserProfileData =
     }
   };
 
+export const getUserProfileDataByUid =
+  uid => async (firebase, firestore, dispatch) => {
+    try {
+      dispatch({ type: actions.GET_USER_DATA_START });
+      const docs = await firestore
+        .collection("cl_user")
+        .where("uid", "==", uid)
+        .get();
+      const doc = docs.docs[0].data();
+      const currentUserId = firebase.auth().currentUser.uid;
+      const followingStatus = await isUserFollower(
+        currentUserId,
+        doc.uid,
+        firestore
+      );
+      dispatch({
+        type: actions.GET_USER_DATA_SUCCESS,
+        payload: { ...doc, isFollowing: followingStatus }
+      });
+    } catch (e) {
+      dispatch({ type: actions.GET_USER_DATA_FAIL, payload: e.message });
+    }
+  };
+
 export const clearUserProfile = () => dispatch => {
   dispatch({ type: actions.CLEAR_USER_PROFILE_DATA_STATE });
 };

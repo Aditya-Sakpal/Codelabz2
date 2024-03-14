@@ -4,7 +4,10 @@ import { makeStyles } from "@mui/styles";
 import Avatar from "@mui/material/Avatar";
 import { useDispatch, useSelector } from "react-redux";
 import { useFirebase, useFirestore } from "react-redux-firebase";
-import { getUserProfileData } from "../../../store/actions";
+import {
+  getUserProfileData,
+  getUserProfileDataByUid
+} from "../../../store/actions";
 import { isUserFollower } from "../../../store/actions/profileActions";
 import { addUserFollower } from "../../../store/actions";
 const useStyles = makeStyles(() => ({
@@ -19,14 +22,18 @@ const useStyles = makeStyles(() => ({
     fontWeight: "600"
   }
 }));
-const User = ({ id, timestamp, showFollowButton, size }) => {
+const User = ({ type = "tutorial", id, timestamp, showFollowButton, size }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const firebase = useFirebase();
   const firestore = useFirestore();
   const [isFollowed, setIsFollowed] = useState(true);
   useEffect(() => {
-    getUserProfileData(id)(firebase, firestore, dispatch);
+    if (type === "tutorial") {
+      getUserProfileData(id)(firebase, firestore, dispatch);
+    } else {
+      getUserProfileDataByUid(id)(firebase, firestore, dispatch);
+    }
     return () => {};
   }, [id]);
 
@@ -39,6 +46,8 @@ const User = ({ id, timestamp, showFollowButton, size }) => {
       }
     }) => data
   );
+
+  console.log(id, user);
 
   useEffect(() => {
     const checkIsFollowed = async () => {
