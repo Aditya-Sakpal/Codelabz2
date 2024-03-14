@@ -86,7 +86,7 @@ const Comment = ({ id, isReply = false }) => {
     }) => data
   );
 
-  const [data] = commentsArray.filter(comment => comment.comment_id == id);
+  const [data] = commentsArray.filter(comment => comment?.comment_id == id);
 
   const repliesArray = useSelector(
     ({
