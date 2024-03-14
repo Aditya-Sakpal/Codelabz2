@@ -6,6 +6,8 @@ import Comment from "./Comment";
 import { addComment } from "../../../../store/actions/tutorialPageActions";
 import { useDispatch, useSelector } from "react-redux";
 import { useFirebase, useFirestore } from "react-redux-firebase";
+import { getVotedComments } from "../../../../store/actions";
+
 const useStyles = makeStyles(() => ({
   container: {
     margin: "10px 0",
@@ -35,6 +37,8 @@ const CommentBox = ({ commentsArray, tutorialId }) => {
   const dispatch = useDispatch();
   const [comments, setComments] = useState([]);
   const [currCommentCount, setCurrCommentCount] = useState(3);
+  const [commentReceived, setCommentReceived] = useState(false);
+
   const handleSubmit = comment => {
     const commentData = {
       content: comment,
@@ -46,11 +50,22 @@ const CommentBox = ({ commentsArray, tutorialId }) => {
     addComment(commentData)(firebase, firestore, dispatch);
   };
 
+  const votedComments = useSelector(
+    ({
+      tutorials: {
+        votedComments: { likedTutorialComments }
+      }
+    }) => likedTutorialComments
+  )
+
+
   useEffect(() => {
-    setComments(commentsArray?.slice(0, currCommentCount));
+    const getVotedCommentsData = async () => { await getVotedComments()(firebase, firestore, dispatch); }
+    getVotedCommentsData();
+    setComments(commentsArray?.slice(0, currCommentCount))
+    setCommentReceived(true);
   }, [currCommentCount, commentsArray]);
 
-  console.log(commentsArray, comments, currCommentCount);
 
   const increaseCommentCount = () => {
     setCurrCommentCount(state => state + 3);

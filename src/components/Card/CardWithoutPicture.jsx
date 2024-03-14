@@ -21,6 +21,13 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useDispatch, useSelector } from "react-redux";
 import { useFirebase, useFirestore } from "react-redux-firebase";
 import { getUserProfileData } from "../../store/actions";
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import { upVote, downVote } from "../../store/actions";
+import { getVotedTutorials } from "../../store/actions";
+// import { removeVote } from "../../store/actions";
+
+import { set } from "lodash";
 const useStyles = makeStyles(theme => ({
   root: {
     margin: "0.5rem",
@@ -58,7 +65,7 @@ const useStyles = makeStyles(theme => ({
     lineHeight: "1"
   },
   small: {
-    padding: "4px"
+    padding: "10px"
   },
   settings: {
     flexWrap: "wrap"
@@ -67,23 +74,61 @@ const useStyles = makeStyles(theme => ({
 
 export default function CardWithoutPicture({ tutorial }) {
   const classes = useStyles();
-  const [alignment, setAlignment] = React.useState("left");
-  const [count, setCount] = useState(1);
+  const [alignment, setAlignment] = useState("left");
+  const [isIncremented, setIsIncremented] = useState(false);
+  const [isDecremented, setIsDecremented] = useState(false);
+  const [incrementCount, setIncrementCount] = useState(tutorial?.upVotes || 0);
+  const [decrementCount, setDecrementCount] = useState(tutorial?.downVotes || 0);
   const dispatch = useDispatch();
   const firebase = useFirebase();
   const firestore = useFirestore();
-  const handleIncrement = () => {
-    setCount(count + 1);
+
+  const handleIncrement = async () => {
+    if (isDecremented) {
+      setDecrementCount(decrementCount - 1);
+      setIsDecremented(false);
+    }
+    if (isIncremented) {
+      setIncrementCount(incrementCount - 1);
+      setIsIncremented(false);
+    } else {
+      setIncrementCount(incrementCount + 1);
+      setIsIncremented(true);
+    }
+    await upVote(tutorial?.tutorial_id)(firebase, firestore, dispatch);
   };
 
-  const handleDecrement = () => {
-    setCount(count - 1);
+  const handleDecrement = async () => {
+    if (isIncremented) {
+      setIncrementCount(incrementCount - 1);
+      setIsIncremented(false);
+    }
+    if (isDecremented) {
+      setDecrementCount(decrementCount - 1);
+      setIsDecremented(false);
+    } else {
+      setDecrementCount(decrementCount + 1);
+      setIsDecremented(true);
+    }
+    await downVote(tutorial?.tutorial_id)(firebase, firestore, dispatch);
   };
+
+  useEffect(() => {
+    if (tutorial?.value === 1) {
+      setIsIncremented(true);
+      setAlignment("left");
+    } else if (tutorial?.value === -1) {
+      setIsDecremented(true);
+      setAlignment("right");
+    }
+  }, [])
 
   const handleAlignment = (event, newAlignment) => {
     setAlignment(newAlignment);
-  };
+    const align = alignment === "right" ? "left" : "right";
+    setAlignment(align)
 
+  };
   useEffect(() => {
     getUserProfileData(tutorial?.created_by)(firebase, firestore, dispatch);
   }, [tutorial]);
@@ -181,9 +226,7 @@ export default function CardWithoutPicture({ tutorial }) {
         <ToggleButtonGroup
           size="small"
           className={classes.small}
-          value={alignment}
           exclusive
-          onChange={handleAlignment}
           aria-label="text alignment"
         >
           <ToggleButton
@@ -192,16 +235,17 @@ export default function CardWithoutPicture({ tutorial }) {
             value="left"
             aria-label="left aligned"
           >
-            <KeyboardArrowUpIcon />
-            <span>{count}</span>
+            <ThumbUpIcon style={{ color: isIncremented ? '#1977d3' : '' }} />
+            <span style={{ marginLeft: "5px" }} >{incrementCount}</span>
           </ToggleButton>
           <ToggleButton
             className={classes.small}
             onClick={handleDecrement}
-            value="center"
-            aria-label="centered"
+            value="right"
+            aria-label="right aligned"
           >
-            <KeyboardArrowDownIcon />
+            <ThumbDownIcon style={{ color: isDecremented ? '#1977d3' : '' }} />
+            <span style={{ marginLeft: "5px" }} >{decrementCount}</span>
           </ToggleButton>
         </ToggleButtonGroup>
         <IconButton aria-label="share" data-testId="CommentIcon">

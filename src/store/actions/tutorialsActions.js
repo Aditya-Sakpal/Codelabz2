@@ -205,7 +205,6 @@ export const getCurrentTutorialData =
       const steps_obj = {};
       stepsQuerySnapshot.forEach(step => {
         steps_obj[step.id] = step.data();
-        // console.log(step.id, step.data())
       });
 
       const steps = _.orderBy(
@@ -355,7 +354,7 @@ export const removeStep =
           .doc(tutorial_id)
           .collection("steps")
           .doc(step_id)
-          .delete()
+          .delete();
 
         // const data = await firestore
         //   .collection("tutorials")
@@ -531,3 +530,260 @@ export const setTutorialTheme =
         console.log(e.message);
       }
     };
+
+export const upVote = (tutorial_id) => async (firebase, firestore, dispatch) => {
+  try {
+    const userId = firebase.auth().currentUser.uid;
+    const tutorialLikesRef = firestore.collection("tutorial_likes");
+    const snapshot = await tutorialLikesRef.where('uid', '==', userId).where('tut_id', '==', tutorial_id).get();
+
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await tutorialLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === 1){
+        await tutorialLikesRef.doc(docId).update({ value: 0 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === -1){
+        await tutorialLikesRef.doc(docId).update({ value: 1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(1), downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await tutorialLikesRef.doc(docId).update({ value: 1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const tutorialLikes = await tutorialLikesRef.add({
+        uid: userId,
+        tut_id: tutorial_id,
+        value: 1
+      });
+      const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+      const tutorialDoc = await tutorialRef.get();
+      if (tutorialDoc.exists) {
+        await tutorialRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await tutorialRef.set({ upVote: 1 }, { merge: true });
+      }
+    }
+
+    await getVotedTutorials()(firebase, firestore, dispatch);
+  } catch (e) {
+    console.log(e.message);
+  }
+}
+
+export const downVote = (tutorial_id) => async (firebase, firestore, dispatch) => {
+  try {
+    const userId = firebase.auth().currentUser.uid;
+    const tutorialLikesRef = firestore.collection("tutorial_likes");
+    const snapshot = await tutorialLikesRef.where('uid', '==', userId).where('tut_id', '==', tutorial_id).get();
+
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await tutorialLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === -1){
+        await tutorialLikesRef.doc(docId).update({ value: 0 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 1){
+        await tutorialLikesRef.doc(docId).update({ value: -1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(1), upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await tutorialLikesRef.doc(docId).update({ value: -1 })
+        const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+        const tutorialDoc = await tutorialRef.get();
+        if (tutorialDoc.exists) {
+          await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const tutorialLikes = await tutorialLikesRef.add({
+        uid: userId,
+        tut_id: tutorial_id,
+        value: -1
+      });
+      const tutorialRef = firestore.collection("tutorials").doc(tutorial_id);
+      const tutorialDoc = await tutorialRef.get();
+      if (tutorialDoc.exists) {
+        await tutorialRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await tutorialRef.set({ downVote: 1 }, { merge: true });
+      }
+    }
+
+    await getVotedTutorials()(firebase, firestore, dispatch);
+
+  } catch (e) {
+    console.log(e.message);
+  }
+}
+
+export const getVotedTutorials = () => async (firebase, firestore, dispatch) => {
+  try {
+    dispatch({ type: actions.GET_VOTED_TUTORIALS_START });
+    const userId = firebase.auth().currentUser.uid;
+    const tutorialLikesRef = firestore.collection("tutorial_likes");
+    const snapshot = await tutorialLikesRef.where('uid', '==', userId).get();
+    if (!snapshot.empty) {
+      const likedTutorials = snapshot.docs.map(doc => doc.data());
+      dispatch({
+        type: actions.GET_VOTED_TUTORIALS_SUCCESS,
+        payload: likedTutorials
+      });
+    } else {
+      dispatch({
+        type: actions.GET_VOTED_TUTORIALS_SUCCESS,
+        payload: []
+      });
+    }
+  } catch (e) {
+    dispatch({
+      type: actions.GET_VOTED_TUTORIALS_FAIL,
+      payload: e.message
+    });
+  }
+}
+
+
+export const upVoteComment = (comment_id) => async (firebase, firestore, dispatch) => {
+  try{
+    const userId = firebase.auth().currentUser.uid;
+    const commentLikesRef = firestore.collection("comment_likes");
+    const snapshot = await commentLikesRef.where('uid', '==', userId).where('comment_id', '==', comment_id).get();
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await commentLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === 1){
+        await commentLikesRef.doc(docId).update({ value: 0 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === -1){
+        await commentLikesRef.doc(docId).update({ value: 1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(1), downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await commentLikesRef.doc(docId).update({ value: 1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const commentLikes = await commentLikesRef.add({
+        uid: userId,
+        comment_id: comment_id,
+        value: 1
+      });
+      const commentRef = firestore.collection("cl_comments").doc(comment_id);
+      const commentDoc = await commentRef.get();
+      if (commentDoc.exists) {
+        await commentRef.update({ upVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await commentRef.set({ upVote: 1 }, { merge: true });
+      }
+    }
+    await getVotedComments()(firebase, firestore, dispatch);
+  }catch(e){
+    console.log(e.message);
+  }
+}
+
+
+export const downVoteComment = (comment_id) => async (firebase, firestore, dispatch) => {
+  try{
+    const userId = firebase.auth().currentUser.uid;
+    const commentLikesRef = firestore.collection("comment_likes");
+    const snapshot = await commentLikesRef.where('uid', '==', userId).where('comment_id', '==', comment_id).get();
+    if (!snapshot.empty) {
+      const docId = snapshot.docs[0].id;
+      const docSnapshot = await commentLikesRef.doc(docId).get();
+      if(docSnapshot.data().value === -1){
+        await commentLikesRef.doc(docId).update({ value: 0 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 1){
+        await commentLikesRef.doc(docId).update({ value: -1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(1), upVotes: firebase.firestore.FieldValue.increment(-1) });
+        }
+      }else if(docSnapshot.data().value === 0){
+        await commentLikesRef.doc(docId).update({ value: -1 })
+        const commentRef = firestore.collection("cl_comments").doc(comment_id);
+        const commentDoc = await commentRef.get();
+        if (commentDoc.exists) {
+          await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+        }
+      }
+    } else {
+      const commentLikes = await commentLikesRef.add({
+        uid: userId,
+        comment_id: comment_id,
+        value: -1
+      });
+      const commentRef = firestore.collection("cl_comments").doc(comment_id);
+      const commentDoc = await commentRef.get();
+      if (commentDoc.exists) {
+        await commentRef.update({ downVotes: firebase.firestore.FieldValue.increment(1) });
+      }else{
+        await commentRef.set({ downVote: 1 }, { merge: true });
+      }
+    }
+    await getVotedComments()(firebase, firestore, dispatch); 
+  }catch(e){
+    console.log(e.message);
+  }
+}
+
+export const getVotedComments = () => async (firebase, firestore, dispatch) => {
+  try{
+    dispatch({ type: actions.GET_VOTED_TUTORIAL_COMMENTS_START });
+    const userId = firebase.auth().currentUser.uid;
+    const commentLikesRef = firestore.collection("comment_likes");
+    const snapshot = await commentLikesRef.where('uid', '==', userId).get();
+    if (!snapshot.empty) {
+      const likedComments = snapshot.docs.map(doc => doc.data());
+      dispatch({
+        type: actions.GET_VOTED_TUTORIAL_COMMENTS_SUCCESS,
+        payload: likedComments
+      });
+    } else {
+      dispatch({
+        type: actions.GET_VOTED_TUTORIAL_COMMENTS_SUCCESS,
+        payload: []
+      });
+    }
+  }catch (e) {
+    dispatch({ type: actions.GET_VOTED_TUTORIAL_COMMENTS_FAIL, payload: e.message });
+    console.log(e.message);
+  }
+}

@@ -29,6 +29,11 @@ import {
   getCommentReply,
   addComment
 } from "../../../../store/actions/tutorialPageActions";
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import { upVoteComment,downVoteComment,getVotedComments } from "../../../../store/actions";
+import { set } from "lodash";
+
 const useStyles = makeStyles(() => ({
   container: {
     margin: "10px 0",
@@ -48,22 +53,16 @@ const useStyles = makeStyles(() => ({
     padding: "0 5px"
   },
   small: {
-    padding: "2px"
+    padding: "5px"
   }
 }));
 
 const Comment = ({ id }) => {
   const classes = useStyles();
   const [showReplyfield, setShowReplyfield] = useState(false);
-  const [alignment, setAlignment] = React.useState("left");
-  const [count, setCount] = useState(1);
-  const firestore = useFirestore();
-  const firebase = useFirebase();
-  const dispatch = useDispatch();
-  useState(() => {
-    getCommentData(id)(firebase, firestore, dispatch);
-  }, [id]);
-
+  const [alignment, setAlignment] = useState("left");
+  const [isIncremented, setIsIncremented] = useState(false);
+  const [isDecremented, setIsDecremented] = useState(false);
   const commentsArray = useSelector(
     ({
       tutorialPage: {
@@ -71,8 +70,44 @@ const Comment = ({ id }) => {
       }
     }) => data
   );
+  const [data,setData]=useState(null);
+  // const [data] = commentsArray.filter(comment => comment?.comment_id == id);
+  const [incrementCount, setIncrementCount] = useState(0);
+  const [decrementCount, setDecrementCount] = useState(0);
+  const firestore = useFirestore();
+  const firebase = useFirebase();
+  const dispatch = useDispatch();
+  useEffect(() => {
+    getCommentData(id)(firebase, firestore, dispatch);
+  }, [id]);
 
-  const [data] = commentsArray.filter(comment => comment.comment_id == id);
+  const votedComments = useSelector(
+    ({
+      tutorials: {
+        votedComments: { likedTutorialComments }
+      }
+    }) => likedTutorialComments
+  )
+
+  useEffect(()=>{
+    console.log(commentsArray,data)
+    setData(commentsArray.find(comment => comment.comment_id === id))
+    setIncrementCount(commentsArray.find(comment => comment.comment_id === id)?.upVotes || 0);
+    setDecrementCount(commentsArray.find(comment => comment.comment_id === id)?.downVotes || 0);
+    const value = votedComments.find(comment => comment.comment_id === id)?.value;
+    if (value === 1) {
+      setIsIncremented(true);
+      setAlignment("left");
+    } else if (value === -1) {
+      setIsDecremented(true);
+      setAlignment("right");
+    }
+  },[commentsArray])
+
+
+
+
+
 
   const repliesArray = useSelector(
     ({
@@ -84,17 +119,36 @@ const Comment = ({ id }) => {
 
   const [replies] = repliesArray.filter(replies => replies.comment_id == id);
 
-  const handleIncrement = () => {
-    setCount(count + 1);
+  const handleIncrement = async () => {
+    if (isDecremented) {
+      setDecrementCount(decrementCount - 1);
+      setIsDecremented(false);
+    }
+    if (isIncremented) {
+      setIncrementCount(incrementCount - 1);
+      setIsIncremented(false);
+    } else {
+      setIncrementCount(incrementCount + 1);
+      setIsIncremented(true);
+    }
+    await upVoteComment(id)(firebase, firestore, dispatch);
   };
 
-  const handleDecrement = () => {
-    setCount(count - 1);
+  const handleDecrement = async () => {
+    if (isIncremented) {
+      setIncrementCount(incrementCount - 1);
+      setIsIncremented(false);
+    }
+    if (isDecremented) {
+      setDecrementCount(decrementCount - 1);
+      setIsDecremented(false);
+    } else {
+      setDecrementCount(decrementCount + 1);
+      setIsDecremented(true);
+    }
+    await downVoteComment(id)(firebase, firestore, dispatch);
   };
 
-  const handleAlignment = (event, newAlignment) => {
-    setAlignment(newAlignment);
-  };
 
   const handleSubmit = comment => {
     const commentData = {
@@ -132,9 +186,7 @@ const Comment = ({ id }) => {
               <ToggleButtonGroup
                 size="small"
                 className={classes.small}
-                value={alignment}
                 exclusive
-                onChange={handleAlignment}
                 aria-label="text alignment"
               >
                 <ToggleButton
@@ -143,16 +195,17 @@ const Comment = ({ id }) => {
                   value="left"
                   aria-label="left aligned"
                 >
-                  <KeyboardArrowUpIcon />
-                  <span>{count}</span>
+                  <ThumbUpIcon style={{ color: isIncremented ? '#1977d3' : '' }} />
+                  <span style={{ marginLeft: "5px" }} >{incrementCount}</span>
                 </ToggleButton>
                 <ToggleButton
                   className={classes.small}
                   onClick={handleDecrement}
-                  value="center"
-                  aria-label="centered"
+                  value="right"
+                  aria-label="right aligned"
                 >
-                  <KeyboardArrowDownIcon />
+                  <ThumbDownIcon style={{ color: isDecremented ? '#1977d3' : '' }} />
+                  <span style={{ marginLeft: "5px" }} >{decrementCount}</span>
                 </ToggleButton>
               </ToggleButtonGroup>
               <IconButton aria-label="share" data-testId="MoreIcon">

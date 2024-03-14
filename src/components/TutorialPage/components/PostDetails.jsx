@@ -18,6 +18,10 @@ import { useFirebase, useFirestore } from "react-redux-firebase";
 import { getUserProfileData } from "../../../store/actions";
 import { HashLink } from "react-router-hash-link";
 import { useParams } from "react-router-dom";
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import { upVote, downVote } from "../../../store/actions";
+
 const useStyles = makeStyles(() => ({
   container: {
     padding: "20px",
@@ -29,7 +33,7 @@ const useStyles = makeStyles(() => ({
     padding: "0 5px"
   },
   small: {
-    padding: "2px"
+    padding: "10px"
   },
   chip: {
     marginLeft: "5px",
@@ -45,8 +49,13 @@ const PostDetails = ({ details }) => {
   const dispatch = useDispatch();
   const firebase = useFirebase();
   const firestore = useFirestore();
-  const [alignment, setAlignment] = React.useState("left");
-  const [count, setCount] = useState(details.upVote - details.downVote || 0);
+  const [alignment, setAlignment] = useState("");
+  const [isIncremented, setIsIncremented] = useState(false);
+  const [isDecremented, setIsDecremented] = useState(false);
+  const [incrementCount, setIncrementCount] = useState(details?.upVotes || 0);
+  const [decrementCount, setDecrementCount] = useState(details?.downVotes || 0);
+
+
   const { id } = useParams();
 
   useEffect(() => {
@@ -61,21 +70,71 @@ const PostDetails = ({ details }) => {
     }) => data
   );
 
+  const votedTutorials = useSelector(
+    ({
+      tutorials: {
+        votes: { likedTutorials }
+      }
+    }) => likedTutorials
+  );
+
   const getTime = timestamp => {
     return timestamp.toDate().toDateString();
   };
 
-  const handleIncrement = () => {
-    setCount(count + 1);
+  const handleIncrement = async () => {
+    if (isDecremented) {
+      setDecrementCount(decrementCount - 1);
+      setIsDecremented(false);
+    }
+    if (isIncremented) {
+      setIncrementCount(incrementCount - 1);
+      setIsIncremented(false);
+    } else {
+      setIncrementCount(incrementCount + 1);
+      setIsIncremented(true);
+    }
+    await upVote(details?.tutorial_id)(firebase, firestore, dispatch);
   };
 
-  const handleDecrement = () => {
-    setCount(count - 1);
+  const handleDecrement = async () => {
+    if (isIncremented) {
+      setIncrementCount(incrementCount - 1);
+      setIsIncremented(false);
+    }
+    if (isDecremented) {
+      setDecrementCount(decrementCount - 1);
+      setIsDecremented(false);
+    } else {
+      setDecrementCount(decrementCount + 1);
+      setIsDecremented(true);
+    }
+    await downVote(details?.tutorial_id)(firebase, firestore, dispatch);
   };
+  const currentTutorialData = useSelector(
+    ({
+      tutorials: {
+        current: { data }
+      }
+    }) => data
+  );
 
-  const handleAlignment = (event, newAlignment) => {
-    setAlignment(newAlignment);
-  };
+  useEffect(()=>{
+    console.log(currentTutorialData, "details")
+  },[currentTutorialData])
+
+
+  useEffect(() => {
+    const val = votedTutorials?.find(t => t.tut_id === details?.tutorial_id)
+    if (val?.value === 1) {
+      setIsIncremented(true);
+      setAlignment("left");
+    } else if (val?.value === -1) {
+      setIsDecremented(true);
+      setAlignment("right");
+    }
+  }, [votedTutorials])
+  
   const classes = useStyles();
   return (
     <>
@@ -111,9 +170,7 @@ const PostDetails = ({ details }) => {
                     <ToggleButtonGroup
                       size="small"
                       className={classes.small}
-                      value={alignment}
                       exclusive
-                      onChange={handleAlignment}
                       aria-label="text alignment"
                     >
                       <ToggleButton
@@ -122,16 +179,17 @@ const PostDetails = ({ details }) => {
                         value="left"
                         aria-label="left aligned"
                       >
-                        <KeyboardArrowUpIcon />
-                        <span>{count}</span>
+                        <ThumbUpIcon style={{ color: isIncremented ? '#1977d3' : '' }} />
+                        <span style={{ marginLeft: "5px" }} >{incrementCount}</span>
                       </ToggleButton>
                       <ToggleButton
                         className={classes.small}
                         onClick={handleDecrement}
-                        value="center"
-                        aria-label="centered"
+                        value="right"
+                        aria-label="right aligned"
                       >
-                        <KeyboardArrowDownIcon />
+                        <ThumbDownIcon style={{ color: isDecremented ? '#1977d3' : '' }} />
+                        <span style={{ marginLeft: "5px" }} >{decrementCount}</span>
                       </ToggleButton>
                     </ToggleButtonGroup>
                     <HashLink to={`/tutorial/${id}#comments`}>
