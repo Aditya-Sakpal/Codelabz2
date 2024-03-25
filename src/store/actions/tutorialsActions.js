@@ -531,3 +531,47 @@ export const setTutorialTheme =
         console.log(e.message);
       }
     };
+export const uploadTutorialImages2 =
+  (tutorial_id, images) => async (firebase, firestore, dispatch) => {
+    console.log(firebase, firestore, dispatch);
+    for (const image of images) {
+      const imageFile = await fetch(image.url)
+        .then(res => res.blob())
+        .then(blob => new File([blob], image.name, { type: blob.type }));
+      const formData = new FormData();
+      console.log(tutorial_id);
+      formData.append("file", imageFile);
+      formData.append("tutorial_id", tutorial_id);
+      try {
+        const response = await fetch(
+          "http://localhost:5001/scorelab-10e3f/us-central1/uploadFile",
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+        console.log("Image uploaded successfully:", response.data);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+      }
+    }
+  };
+
+export const deleteTutorialImages2 =
+  (tutorial_id, imageName) => async (firebase, firestore, dispatch) => {
+    console.log(firebase, firestore, dispatch);
+    try {
+      const response = await fetch(
+        `http://localhost:5001/scorelab-10e3f/us-central1/deleteFile?fileName=${imageName}&tutorial_id=${tutorial_id}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      console.log("Image deleted successfully.", response);
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      throw error;
+    }
+  };

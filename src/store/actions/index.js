@@ -64,5 +64,7 @@ export {
   setTutorialTheme,
   updateStepTime,
   updateStepTitle,
-  uploadTutorialImages
+  uploadTutorialImages,
+  uploadTutorialImages2,
+  deleteTutorialImages2
 } from "./tutorialsActions";

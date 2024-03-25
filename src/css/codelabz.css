@@ -61,6 +61,12 @@ body {
   animation: fade_in_show 0.5s;
 }
 
+div:where(.swal2-container) {
+  display: grid;
+  position: absolute !important;
+  z-index: 2060 !important;
+}
+
 @keyframes fade_in_show {
   0% {
     opacity: 0;
