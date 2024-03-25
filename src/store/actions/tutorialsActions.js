@@ -173,9 +173,9 @@ export const createTutorial =
     }
   };
 
-const checkUserOrOrgHandle = handle => async firestore => {
-  const userHandleExists = await checkUserHandleExists(handle)(firestore);
-  const orgHandleExists = await checkOrgHandleExists(handle)(firestore);
+const checkUserOrOrgHandle = handle => async (firebase) => {
+  const userHandleExists = await checkUserHandleExists(handle)(firebase);
+  const orgHandleExists = await checkOrgHandleExists(handle)(firebase);
 
   if (userHandleExists && !orgHandleExists) {
     return "user";
@@ -388,9 +388,9 @@ export const uploadTutorialImages =
   (owner, tutorial_id, files) => async (firebase, firestore, dispatch) => {
     try {
       dispatch({ type: actions.TUTORIAL_IMAGE_UPLOAD_START });
-      const type = await checkUserOrOrgHandle(owner)(firestore);
-
+      const type = await checkUserOrOrgHandle(owner)(firebase);
       const storagePath = `tutorials/${type}/${owner}/${tutorial_id}`;
+      console.log(storagePath)
       const dbPath = `tutorials`;
       await firebase.uploadFiles(storagePath, files, dbPath, {
         metadataFactory: (uploadRes, firebase, metadata, downloadURL) => {
@@ -531,3 +531,43 @@ export const setTutorialTheme =
       console.log(e.message);
     }
   };
+
+
+
+export const uploadTutorialImages2 = ( tutorial_id, images ) => async (firebase, firestore, dispatch) => {
+  for (const image of images) {
+    const imageFile = await fetch(image.url).then(res => res.blob()).then(blob => new File([blob], image.name, { type: blob.type }));
+
+    console.log(imageFile.type)
+    const formData = new FormData();
+    console.log(tutorial_id)
+    formData.append('file', imageFile);
+    formData.append('tutorial_id',tutorial_id)
+    try {
+      const response = await fetch('http://localhost:5001/scorelab-10e3f/us-central1/uploadFile', {
+        method: 'POST',
+        body: formData
+      });
+
+      console.log('Image uploaded successfully:', response.data);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  }
+}
+
+
+
+export const deleteTutorialImages2 = (tutorial_id, imageName) => async (firebase, firestore, dispatch) => {
+  try {
+    const response = await fetch(`http://localhost:5001/scorelab-10e3f/us-central1/deleteFile?fileName=${imageName}&tutorial_id=${tutorial_id}`,{
+      method: 'DELETE'
+    });
+
+    console.log("Image deleted successfully.");
+  
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    throw error;
+  }
+}
