@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 dotenv.config({
   path: "../.env"
 });
-
+try{
 /**
  * +++++++++++++++++++CLOUD FUNCTIONS+++++++++++++++++++++++++++++
  */
@@ -48,3 +48,4 @@ exports.updateOrgUser = functions.firestore
 exports.deleteTutorialSteps = functions.pubsub
   .schedule("every 7 days")
   .onRun(pubSubFunctions.deleteTutorialStepsHandler);
+}catch(e){console.log(e)}
